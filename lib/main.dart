@@ -44,27 +44,32 @@ void openReadPage(
   }));
 }
 
-Future<List<String>> getData() async {
-  final response = await http.Client()
-      .get(Uri.parse('https://www.anekdot.ru/last/anekdot/'));
-  List<String> texts = [];
+Future<List<String>?> getData() async {
+  try {
+    final response = await http.Client()
+        .get(Uri.parse('https://www.anekdot.ru/last/anekdot/'));
+    List<String> texts = [];
 
-  if (response.statusCode == 200) {
-    var document = parse(response.body);
-    var ctx = document
-        .getElementsByClassName('col-left col-left-margin')
-        .first
-        .children
-        .first
-        .children
-        .sublist(1);
-    ctx.forEach((element) {
-      if (element.className == 'topicbox') {
-        texts.add(element.children.first.text);
-      }
-    });
+    if (response.statusCode == 200) {
+      var document = parse(response.body);
+      var ctx = document
+          .getElementsByClassName('col-left col-left-margin')
+          .first
+          .children
+          .first
+          .children
+          .sublist(1);
+      ctx.forEach((element) {
+        if (element.className == 'topicbox') {
+          texts.add(element.children.first.text);
+        }
+      });
+    }
+    return texts;
+  } catch (e) {
+    print('Finding Error: $e');
+    return null;
   }
-  return texts;
 }
 
 class _MyAppHeader {
@@ -148,7 +153,9 @@ class _ItemsCard extends StatelessWidget {
 class _ItemsList extends StatefulWidget {
   static Future<List<_ItemsCard>> getItems() async {
     List<_ItemsCard> list = <_ItemsCard>[];
-    (await getData()).forEach((element) {
+
+    List<String>? lists = await getData();
+    lists?.forEach((element) {
       list.add(_ItemsCard(list.length + 1, element, ItemTypes.Finded, () {}));
     });
 
@@ -170,7 +177,7 @@ class __ItemsListState extends State<_ItemsList> {
     updateChecker = !updateChecker;
 
     var buffer = await _ItemsList.getItems();
-    setState(() => items = buffer);
+    if (buffer.isNotEmpty) setState(() => items = buffer);
 
     updateChecker = !updateChecker;
   }
@@ -206,7 +213,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter App',
+      title: 'Анекдоты',
       home: Scaffold(
           appBar: _MyAppHeader('Смешные Анекдоты').build(),
           drawer: _MyLeftSideDrawer(),
